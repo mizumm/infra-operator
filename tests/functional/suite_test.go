@@ -42,11 +42,13 @@ import (
 	topologyv1 "github.com/openstack-k8s-operators/infra-operator/apis/topology/v1beta1"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	instancehav1 "github.com/openstack-k8s-operators/infra-operator/apis/instanceha/v1beta1"
 	memcachedv1 "github.com/openstack-k8s-operators/infra-operator/apis/memcached/v1beta1"
 	networkv1 "github.com/openstack-k8s-operators/infra-operator/apis/network/v1beta1"
 	rabbitmqv1 "github.com/openstack-k8s-operators/infra-operator/apis/rabbitmq/v1beta1"
 	rabbitmqclusterv2 "github.com/rabbitmq/cluster-operator/v2/api/v1beta1"
 
+	instanceha_ctrl "github.com/openstack-k8s-operators/infra-operator/controllers/instanceha"
 	memcached_ctrl "github.com/openstack-k8s-operators/infra-operator/controllers/memcached"
 	network_ctrl "github.com/openstack-k8s-operators/infra-operator/controllers/network"
 	rabbitmq_ctrl "github.com/openstack-k8s-operators/infra-operator/controllers/rabbitmq"
@@ -139,6 +141,8 @@ var _ = BeforeSuite(func() {
 	err = rabbitmqclusterv2.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = memcachedv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = instancehav1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = k8s_networkv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
@@ -240,6 +244,13 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&memcached_ctrl.Reconciler{
+		Client:  k8sManager.GetClient(),
+		Scheme:  k8sManager.GetScheme(),
+		Kclient: kclient,
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&instanceha_ctrl.Reconciler{
 		Client:  k8sManager.GetClient(),
 		Scheme:  k8sManager.GetScheme(),
 		Kclient: kclient,

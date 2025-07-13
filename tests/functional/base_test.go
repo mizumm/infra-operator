@@ -37,6 +37,7 @@ import (
 
 	k8s_networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	frrk8sv1 "github.com/metallb/frr-k8s/api/v1beta1"
+	instancehav1 "github.com/openstack-k8s-operators/infra-operator/apis/instanceha/v1beta1"
 	memcachedv1 "github.com/openstack-k8s-operators/infra-operator/apis/memcached/v1beta1"
 	networkv1 "github.com/openstack-k8s-operators/infra-operator/apis/network/v1beta1"
 	topologyv1 "github.com/openstack-k8s-operators/infra-operator/apis/topology/v1beta1"
@@ -991,4 +992,34 @@ func GetTopologyRef(name string, namespace string) []types.NamespacedName {
 			Namespace: namespace,
 		},
 	}
+}
+
+func CreateInstancehaConfig(namespace string, spec map[string]interface{}) client.Object {
+	name := "instanceha-" + uuid.New().String()[:25]
+
+	raw := map[string]interface{}{
+		"apiVersion": "instanceha.openstack.org/v1beta1",
+		"kind":       "InstanceHa",
+		"metadata": map[string]interface{}{
+			"name":      name,
+			"namespace": namespace,
+		},
+		"spec": spec,
+	}
+
+	return th.CreateUnstructured(raw)
+}
+
+func GetDefaultInstancehaSpec() map[string]interface{} {
+	return map[string]interface{}{
+		"replicas": 1,
+	}
+}
+
+func GetInstanceha(name types.NamespacedName) *instancehav1.InstanceHa {
+	instance := &instancehav1.InstanceHa{}
+	Eventually(func(g Gomega) {
+		g.Expect(k8sClient.Get(ctx, name, instance)).Should(Succeed())
+	}, timeout, interval).Should(Succeed())
+	return instance
 }
